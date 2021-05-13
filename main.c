@@ -6,11 +6,18 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #define FRAME_DELAY     5
-#define WINDOW_WIDTH    648
-#define WINDOW_HEIGHT   480
+#define WINDOW_WIDTH    900
+#define WINDOW_HEIGHT   600
 #define CIRCLE_RAD      100
 #define CIRCLE_DIAMETER (CIRCLE_RAD * 2)
 #define HISTORY_SIZE    (WINDOW_WIDTH - CIRCLE_DIAMETER)
+#define POINT_RAD       3
+#define PADDING_SIZE    100
+#define SEP_SIZE        (PADDING_SIZE + 100)
+
+#define HISTORY_COLOR 0xffffffff
+#define POINT_COLOR 0xffffffff
+#define CIRCLE_COLOR 0xffffffff
 
 int    g_history[HISTORY_SIZE] = {0};
 double g_angle = 0.0;
@@ -89,7 +96,8 @@ int main(void)
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderClear(renderer);
 
-		/* SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); */
+		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
 		/*
 		** n = range(1, inf, 2)
 		**
@@ -103,30 +111,41 @@ int main(void)
 		double sum_y = 0.0;
 		for (int circle_num = 0; circle_num < g_circle_count; circle_num++)
 		{
-			int factor = 1 + circle_num * 2;
-			int radius = (CIRCLE_RAD - 25) * 4 / (factor * M_PI);
+			double factor = 1 + circle_num * 2;
+			double radius = (CIRCLE_RAD - 25) * 4 / (factor * M_PI);
 			double x = radius * cos(factor * g_angle);
 			double y = radius * sin(factor * g_angle);
 
-			int center_x = CIRCLE_RAD        + sum_x;
+			int center_x = CIRCLE_RAD        + sum_x + PADDING_SIZE;
 			int center_y = WINDOW_HEIGHT / 2 + sum_y;
-			aacircleColor(renderer,     center_x,      center_y,     radius, 0xffffffff);
-			filledCircleColor(renderer, center_x  + x, center_y + y, 3,      0xffffffff);
+			aacircleColor(renderer, center_x, center_y, radius, CIRCLE_COLOR);
+			filledCircleColor(renderer, center_x + x, center_y + y, POINT_RAD, POINT_COLOR);
 			sum_x += x;
 			sum_y += y;
 		}
-
 		g_angle += 0.01;
+
+		int draw_point_x = CIRCLE_DIAMETER + SEP_SIZE;
+		int draw_point_y = WINDOW_HEIGHT / 2 + sum_y;
+
+		hlineColor(renderer, CIRCLE_RAD + sum_x + PADDING_SIZE, draw_point_x, draw_point_y, HISTORY_COLOR);
+		filledCircleColor(renderer, draw_point_x, draw_point_y, POINT_RAD, POINT_COLOR);
 
 		memmove(g_history + 1, g_history, sizeof(g_history[0]) * (HISTORY_SIZE - 1));
 		g_history[0] = sum_y;
 
-		for (size_t i = 0; i < HISTORY_SIZE; i++)
+		for (size_t i = 0; i < HISTORY_SIZE - 1; i++)
 		{
-			SDL_RenderDrawPoint(
+			size_t next = i + 1;
+			if (g_history[next] == WINDOW_HEIGHT)
+				break;
+			aalineColor(
 				renderer,
-				CIRCLE_DIAMETER + i + 10,
-				WINDOW_HEIGHT / 2 + g_history[i]
+				CIRCLE_DIAMETER + i + SEP_SIZE,
+				WINDOW_HEIGHT / 2 + g_history[i],
+				CIRCLE_DIAMETER + next + SEP_SIZE,
+				WINDOW_HEIGHT / 2 + g_history[next],
+				HISTORY_COLOR
 			);
 		}
 
